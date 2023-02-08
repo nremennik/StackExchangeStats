@@ -30,7 +30,7 @@ public class Main {
         REQUIRED_TAGS.add(".net");
         REQUIRED_TAGS.add("docker");
         REQUIRED_TAGS.add("c#");
-        //        REQUIRED_TAGS.add("apigee");
+//        REQUIRED_TAGS.add("apigee");
 
         REQUIRED_COUNTRIES.add("romania");
         REQUIRED_COUNTRIES.add("moldova");
@@ -39,7 +39,6 @@ public class Main {
     public static void main(String[] args) throws IOException {
         long startTime;
         startTime = System.currentTimeMillis();
-        System.out.println("Started at: " + startTime);
 
         Map<String, String> params = new HashMap<>();
         params.put("pagesize", Integer.toString(PAGE_SIZE));
@@ -48,7 +47,6 @@ public class Main {
         params.put("site", "stackoverflow");
         params.put("min", MIN_REPUTATION);
         params.put("filter", FIELDS_FILTER);
-
         if (ACCESS_KEY != null) params.put("key", ACCESS_KEY);
 
         Retrofit retrofit = new Retrofit.Builder().baseUrl(BASE_URL).addConverterFactory(GsonConverterFactory.create()).build();
@@ -66,16 +64,16 @@ public class Main {
                 ErrorDescription errorDescription;
                 if (response.errorBody() != null) {
                     errorDescription = new Gson().fromJson(response.errorBody().string(), ErrorDescription.class);
-                    System.out.printf("Server error %d (%s): %s\nRequest #%d\n", errorDescription.getErrorId(), errorDescription.getErrorName(), errorDescription.getErrorMessage(), pageNo);
+                    System.err.printf("Server error %d (%s): %s\nError while processing request #%d\n", errorDescription.getErrorId(), errorDescription.getErrorName(), errorDescription.getErrorMessage(), pageNo);
                 }
                 else {
-                    System.out.printf("Server error.\nRequest #%d\n", pageNo);
+                    System.err.printf("Server error.\nError while processing request #%d\n", pageNo);
                 }
                 break;
             }
             items = response.body();
             if (items == null || items.getItems() == null) {
-                System.out.printf("No users found!\nRequest #%d\n", pageNo);
+                System.err.printf("No users found!\nError while processing request #%d\n", pageNo);
                 break;
             }
             call = call.clone();
@@ -91,7 +89,7 @@ public class Main {
                 return (true);
             }).collect(Collectors.toList());
 
-            //            if (users.size() == 0) System.out.println(executionTime + " " + System.currentTimeMillis());
+            //            if (users.size() == 0) System.err.println(executionTime + " " + System.currentTimeMillis());
             for (User u : users) {
                 System.out.print(u.getDisplayName() + "|" + u.getLocation() + "|" + u.getAnswerCount() + "|" + u.getQuestionCount() + "|");
 
@@ -119,15 +117,16 @@ public class Main {
                 try {
                     Thread.sleep(timeout);
                 } catch (InterruptedException ignored) {
-                    System.out.println("Interrupted!");
+                    System.err.println("Interrupted!");
                 }
             }
             previousReqTime = System.currentTimeMillis();
 
+            System.err.println("Page " + pageNo + " processed.");
             pageNo++;
         } while (pageNo < PAGES_LIMIT);
 
         long endTime = System.currentTimeMillis();
-        System.out.printf("Done at: %d, took %d millis (%f seconds)\n", endTime, endTime - startTime, (endTime - startTime) / 1000.0);
+        System.err.printf("Done in %d milliseconds (%f seconds)\n", endTime - startTime, (endTime - startTime) / 1000.0);
     }
 }
