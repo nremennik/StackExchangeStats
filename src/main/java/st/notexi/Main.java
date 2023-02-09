@@ -16,12 +16,17 @@ import java.util.stream.Collectors;
 
 public class Main {
     private final static String BASE_URL = "https://api.stackexchange.com/";
-    private final static int THROTHLING_LIMIT_PER_10SEC = 290;
+    private final static int THROTHLING_LIMIT_PER_SEC = 30;
     private final static int PAGE_SIZE = 100;
     private final static int PAGES_LIMIT = 2000;
     private final static String MIN_REPUTATION = "223";
     private final static String ACCESS_KEY = null;
-    private final static String FIELDS_FILTER = "!d0OIIVTgrb09xZY)*aPuDD0EMy4(rCDQ0FUn";
+
+    // With total (slow)
+    // private final static String FIELDS_FILTER = "!d0OIIVTgrb09xZY)*aPuDD0EMy4(rCDQ0FUn";
+
+    // Without total (faster)
+    private final static String FIELDS_FILTER = "!4LuLg.7-ZhsbquMjWVxBEREydvyw9AmtZAlsKib";
     private final static Set<String> REQUIRED_TAGS = new HashSet<>();
     private final static Set<String> REQUIRED_COUNTRIES = new HashSet<>();
 
@@ -30,7 +35,7 @@ public class Main {
         REQUIRED_TAGS.add(".net");
         REQUIRED_TAGS.add("docker");
         REQUIRED_TAGS.add("c#");
-//        REQUIRED_TAGS.add("apigee");
+        //        REQUIRED_TAGS.add("apigee");
 
         REQUIRED_COUNTRIES.add("romania");
         REQUIRED_COUNTRIES.add("moldova");
@@ -110,10 +115,10 @@ public class Main {
 
             // Check throttling
             long executionTime = System.currentTimeMillis() - previousReqTime;
-            if (executionTime < 10000 / THROTHLING_LIMIT_PER_10SEC || (items.getBackoff() != null)) {
+            if (executionTime < 1000 / THROTHLING_LIMIT_PER_SEC || (items.getBackoff() != null)) {
                 long timeout;
                 if (items.getBackoff() != null) timeout = items.getBackoff() * 1000L;
-                else timeout = 10000 / THROTHLING_LIMIT_PER_10SEC - executionTime;
+                else timeout = 1000 / THROTHLING_LIMIT_PER_SEC - executionTime;
                 try {
                     Thread.sleep(timeout);
                 } catch (InterruptedException ignored) {
