@@ -60,8 +60,7 @@ public class Main {
 
         long previousReqTime = 0;
         Items items;
-        int pageNo = 1;
-        do {
+        for (int pageNo = 1; pageNo < PAGES_LIMIT; pageNo++) {
             params.put("page", Integer.toString(pageNo));
             Response<Items> response = call.execute(); // Synchronous request
 
@@ -86,22 +85,22 @@ public class Main {
             // Do we need to filter by user_type equalsTo "registered"?
             List<User> users = items.getItems()
                     .stream()
+                    .filter(item -> item.getAnswerCount() > 0)
                     .filter(item -> item.getLocation() != null
                             &&
                             REQUIRED_COUNTRIES.stream()
                                     .anyMatch(country ->
                                             item.getLocation().toLowerCase().contains(country)))
-                    .filter(item -> item.getAnswerCount() > 0)
                     .filter(item -> {
                         try {
-                            if (item.getCollectives().get(0).getCollective().getTags()
-                                    .stream()
-                                    .noneMatch(REQUIRED_TAGS::contains))
-                                return (false);
-                        } catch (NullPointerException npe) {
-                            return (false);
+                            if (item.getCollectives().stream()
+                                    .anyMatch(c -> c.getCollective().getTags()
+                                            .stream()
+                                            .anyMatch(REQUIRED_TAGS::contains)))
+                                return (true);
+                        } catch (NullPointerException ignored) {
                         }
-                        return (true);
+                        return (false);
                     }).collect(Collectors.toList());
 
             //            if (users.size() == 0) System.err.println(executionTime + " " + System.currentTimeMillis());
@@ -113,12 +112,12 @@ public class Main {
 
                 final boolean[] first = {true};
                 try {
-                    u.getCollectives().get(0).getCollective().getTags()
+                    u.getCollectives().stream().forEach(c -> c.getCollective().getTags()
                             .forEach(tag -> {
                                 if (!first[0]) System.out.print(",");
                                 else first[0] = false;
                                 System.out.print(tag);
-                            });
+                            }));
                 } catch (NullPointerException ignored) // No tags, print nothing
                 {
                 }
@@ -144,8 +143,7 @@ public class Main {
             previousReqTime = System.currentTimeMillis();
 
             System.err.println("Page " + pageNo + " processed.");
-            pageNo++;
-        } while (pageNo < PAGES_LIMIT);
+        }
 
         long endTime = System.currentTimeMillis();
         System.err.printf("Done in %d milliseconds (%f seconds)\n", endTime - startTime, (endTime - startTime) / 1000.0);
