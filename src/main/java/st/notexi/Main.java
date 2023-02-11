@@ -18,7 +18,7 @@ public class Main {
     private final static String BASE_URL = "https://api.stackexchange.com/";
     private final static int THROTHLING_LIMIT_PER_SEC = 30;
     private final static int PAGE_SIZE = 100;
-    private final static int PAGES_LIMIT = 2000;
+    private final static int PAGES_LIMIT = 500;
     private final static String MIN_REPUTATION = "223";
     private final static String ACCESS_KEY = null;
 
@@ -84,34 +84,50 @@ public class Main {
             call = call.clone();
 
             // Do we need to filter by user_type equalsTo "registered"?
-            List<User> users = items.getItems().stream().filter(item -> item.getLocation() != null && REQUIRED_COUNTRIES.stream().anyMatch(country -> item.getLocation().toLowerCase().contains(country))).filter(item -> item.getAnswerCount() > 0).filter(item -> {
-                try {
-                    if (item.getCollectives().get(0).getCollective().getTags().stream().noneMatch(REQUIRED_TAGS::contains))
-                        return (false);
-                } catch (NullPointerException npe) {
-                    return (false);
-                }
-                return (true);
-            }).collect(Collectors.toList());
+            List<User> users = items.getItems()
+                    .stream()
+                    .filter(item -> item.getLocation() != null
+                            &&
+                            REQUIRED_COUNTRIES.stream()
+                                    .anyMatch(country ->
+                                            item.getLocation().toLowerCase().contains(country)))
+                    .filter(item -> item.getAnswerCount() > 0)
+                    .filter(item -> {
+                        try {
+                            if (item.getCollectives().get(0).getCollective().getTags()
+                                    .stream()
+                                    .noneMatch(REQUIRED_TAGS::contains))
+                                return (false);
+                        } catch (NullPointerException npe) {
+                            return (false);
+                        }
+                        return (true);
+                    }).collect(Collectors.toList());
 
             //            if (users.size() == 0) System.err.println(executionTime + " " + System.currentTimeMillis());
-            for (User u : users) {
-                System.out.print(u.getDisplayName() + "|" + u.getLocation() + "|" + u.getAnswerCount() + "|" + u.getQuestionCount() + "|");
+            users.forEach(u -> {
+                System.out.print(u.getDisplayName() + "|"
+                        + u.getLocation() + "|"
+                        + u.getAnswerCount() + "|"
+                        + u.getQuestionCount() + "|");
 
-                boolean first = true;
+                final boolean[] first = {true};
                 try {
-                    for (String tag : u.getCollectives().get(0).getCollective().getTags()) {
-                        if (!first) System.out.print(",");
-                        else first = false;
-                        System.out.print(tag);
-                    }
+                    u.getCollectives().get(0).getCollective().getTags()
+                            .forEach(tag -> {
+                                if (!first[0]) System.out.print(",");
+                                else first[0] = false;
+                                System.out.print(tag);
+                            });
                 } catch (NullPointerException ignored) // No tags, print nothing
                 {
                 }
-                if (!first) System.out.print("|");
+                if (!first[0]) System.out.print("|");
 
-                System.out.println(u.getDisplayName() + "|" + u.getLink() + "|" + u.getProfileImage() + "|");
-            }
+                System.out.println(u.getDisplayName() + "|"
+                        + u.getLink() + "|"
+                        + u.getProfileImage() + "|");
+            });
 
             // Check throttling
             long executionTime = System.currentTimeMillis() - previousReqTime;
